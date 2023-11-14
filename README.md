@@ -6,9 +6,6 @@ Overview
 This repository contains the solutions for the R Skills Assessment conducted by the Global Poverty & Inequality Data Team (GPID) in the Development Economics Data Group (DECDG) at the World Bank.
 
 Contents
-ChatGPT
-
-Certainly! Here's the revised section in bullet points:
 
     Analysis:
         GDP per capita
