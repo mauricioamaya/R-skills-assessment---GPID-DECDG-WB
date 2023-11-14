@@ -7,21 +7,9 @@ This repository contains the solutions for the R Skills Assessment conducted by 
 
 Contents
 
-Analysis
-        GDP per capita
-        Life expectancy
-        Poverty measures
-        Income distribution
-
-Functions for Statistical Analysis
-        Calculating summary statistics
-        Identifying outliers
-        Computing poverty and inequality indices
-
-Visualizations using ggplot2
-        Poverty trends
-        Lorenz curves
-        Gini coefficients
+    Analysis of GDP per capita, life expectancy, poverty measures, and income distribution.
+    Functions to perform statistical analysis, such as calculating summary statistics, identifying outliers, and computing poverty and inequality indices.
+    Visualizations using ggplot2, including poverty trends, Lorenz curves, and Gini coefficients.
 
 Tools Used
 
