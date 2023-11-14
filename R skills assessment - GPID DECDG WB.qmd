@@ -30,7 +30,7 @@ summary_gdp <- wdi %>%
   Min = min(gdp, na.rm = TRUE),
   Max = max(gdp, na.rm = TRUE))
 
-print(summary_gdp)
+head(summary_gdp)
 ```
 
 ```{r}
@@ -75,7 +75,7 @@ agg_stats_long <- agg_stats %>%
     names_to = c(".value", "estimate"),
     names_sep = "_")
   
-print(agg_stats_long)
+head(agg_stats_long)
 ```
 
 ```{r}
@@ -110,7 +110,7 @@ stats_year <- wdi %>%
     out_gdp = ifelse(gdp < low_gdp | gdp > high_gdp, 1, 0), 
     out_gini = ifelse(gini < low_gini | gini > high_gini, 1, 0))
     
-print(outliers)
+head(outliers)
 ```
 
 ```{r}
@@ -163,7 +163,7 @@ for (i in 1:length(l_svy)){
 
 poverty_measure <- rbindlist(poverty_results, idcol = "id")
 poverty_measure <- poverty_measure[, .(year, povline, headcount, poverty_gap, poverty_severity)]
-print(poverty_measure)
+head(poverty_measure)
 ```
 
 ```{r}
@@ -196,7 +196,7 @@ lorenz_curves <- lapply(names(l_svy), function(year) {
 })
 
 lorenzcurve_result <- rbindlist(lorenz_curves, idcol = "id")
-print(lorenzcurve_result)
+head(lorenzcurve_result)
 ```
 
 ```{r}
