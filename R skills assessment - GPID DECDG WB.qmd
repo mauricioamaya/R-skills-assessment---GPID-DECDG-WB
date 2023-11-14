@@ -1,16 +1,293 @@
 ---
 title: "R skills assessment - GPID DECDG WB"
+author: "Mauricio Amaya"
+date: "2023-11-14"
 ---
 
 ## Quarto
 
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
-
 ```{r}
+#Load data
 tag      <- "202311081903"
 base_url <- "https://github.com/randrescastaneda/pub_data/raw/"
 data_url <- paste0(base_url, tag, "/data/Rtest1/")
 
-
 wdi <- readr::read_rds(paste0(data_url, "wdi_in1.Rds"))
+```
+
+```{r}
+#Summary statistics of GDP per capita by region
+
+library(dplyr)
+
+summary_gdp <- wdi %>% 
+  filter(!is.na(gdp)) %>% 
+  group_by(region, date) %>%  
+  reframe(
+  N = n(),
+  Mean = weighted.mean(gdp, pop, na.rm = TRUE),
+  SD = sqrt(sum(pop*(gdp - weighted.mean(gdp, pop, na.rm = TRUE))^2)/sum(pop)),
+  Min = min(gdp, na.rm = TRUE),
+  Max = max(gdp, na.rm = TRUE))
+
+print(summary_gdp)
+```
+
+```{r}
+#Aggregate stats
+
+library(dplyr)
+library(tidyr)
+
+#It is important to clarify here we are not actually calculating the population mean, but the name was convenient for the task. However I should have opted for calling the estimate of population "value" instead to name it according to the estimate of the other columns in the dataset.
+agg_stats <- wdi %>% 
+  group_by(region, date) %>%  
+  reframe(
+    
+  pop_mean = sum(pop, na.rm = TRUE),
+  lifeex_mean = weighted.mean(lifeex, pop, na.rm = TRUE),
+  gdp_mean = weighted.mean(gdp, pop, na.rm = TRUE),
+  povintl_mean = weighted.mean(pov_intl, pop, na.rm = TRUE),
+  
+  pop_sd = sum(pop, na.rm = TRUE),
+  lifeex_sd = sqrt(sum(pop*(lifeex - weighted.mean(lifeex, pop, na.rm = TRUE))^2)/sum(pop)),
+  gdp_sd = sqrt(sum(pop*(gdp - weighted.mean(gdp, pop, na.rm = TRUE)*pop)^2)/sum(pop)),
+  povintl_sd = sqrt(sum(pop*(pov_intl - weighted.mean(pov_intl, pop, na.rm = TRUE)*pop)^2)/sum(pop)),
+  
+  pop_min = sum(pop, na.rm = TRUE),
+  lifeex_min = min(lifeex, na.rm = TRUE),
+  gdp_min = min(gdp, na.rm = TRUE),
+  povintl_min = min(pov_intl, na.rm = TRUE),
+  
+  pop_max = sum(pop, na.rm = TRUE),
+  lifeex_max = max(lifeex, na.rm = TRUE),
+  gdp_max = max(gdp, na.rm = TRUE),
+  povintl_max = max(pov_intl, na.rm = TRUE),
+  
+  pop_median = sum(pop, na.rm = TRUE),
+  lifeex_median = median(lifeex, na.rm = TRUE),
+  gdp_median = median(gdp, na.rm = TRUE),
+  povintl_median = median(pov_intl, na.rm = TRUE))
+
+agg_stats_long <- agg_stats %>% 
+  pivot_longer(
+    cols = starts_with("pop_") |starts_with("lifeex_") | starts_with("gdp_") | starts_with("povintl_"), 
+    names_to = c(".value", "estimate"),
+    names_sep = "_")
+  
+print(agg_stats_long)
+```
+
+```{r}
+#Find outliers
+
+library(dplyr)
+
+stats_year <- wdi %>%  
+  filter(!is.na(lifeex) | !is.na(gdp) | !is.na(gini)) %>%
+  group_by(date) %>%  
+  reframe(
+  mean_lifeex = weighted.mean(lifeex, pop, na.rm = TRUE),
+  sd_lifeex = sqrt(sum(pop*(lifeex - weighted.mean(lifeex, pop, na.rm = TRUE))^2)/sum(pop)),
+  mean_gdp = weighted.mean(gdp, pop, na.rm = TRUE),
+  sd_gdp = sqrt(sum(pop*(gdp - weighted.mean(gdp, pop, na.rm = TRUE))^2)/sum(pop)),
+  mean_gini = weighted.mean(gini, pop, na.rm = TRUE),
+  sd_gini = sqrt(sum(pop*(gini - weighted.mean(gini, pop, na.rm = TRUE))^2)/sum(pop)))
+  
+  stats_year <- stats_year %>% 
+    mutate(
+    low_lifeex = mean_lifeex - 2.5* sd_lifeex,
+    high_lifeex = mean_lifeex + 2.5* sd_lifeex, 
+    low_gdp = mean_gdp - 2.5* sd_gdp,
+    high_gdp = mean_gdp + 2.5* sd_gdp, 
+    low_gini = mean_gini - 2.5* sd_gini,
+    high_gini = mean_gini + 2.5* sd_gini)
+  
+  outliers <- wdi %>% 
+    left_join(stats_year, by = "date") %>% 
+    mutate(
+    out_lifeex = ifelse(lifeex < low_lifeex | lifeex > high_lifeex, 1, 0 ),
+    out_gdp = ifelse(gdp < low_gdp | gdp > high_gdp, 1, 0), 
+    out_gini = ifelse(gini < low_gini | gini > high_gini, 1, 0))
+    
+print(outliers)
+```
+
+```{r}
+#load data
+
+l_svy <- readr::read_rds(paste0(data_url, "svy_sim_in1.Rds"))
+
+```
+
+```{r}
+#Poverty measures
+
+library(data.table)
+
+poverty_lines <- c(2.15, 3.65, 6.85)
+poverty_results <- list()
+
+poverty_fgt <- function(survey, poverty_line) {
+  
+  incomes <- survey$income
+  weights <- survey$weight
+  
+  headcount <- sum(weights[incomes < poverty_line]) / sum (weights)
+  
+  poverty_gap <- pmax(poverty_line - incomes, 0)
+  gap <- sum(weights * poverty_gap) / (poverty_line * sum(weights))
+  
+  severity <- sum(weights * (poverty_gap^2)) / (poverty_line^2 * sum(weights))
+  
+  return(list(
+    headcount = headcount,
+    poverty_gap = gap,
+    poverty_severity = severity))
+}
+
+actual_years <- as.integer(sub("Y", "", names(l_svy)))
+
+
+for (i in 1:length(l_svy)){
+  year_data <- l_svy[[i]]
+  actual_year <- actual_years[i]
+  
+  for (line in poverty_lines) {
+    result_fgt <- poverty_fgt(year_data, line)
+    result_fgt$year <- actual_year
+    result_fgt$povline <- line
+    poverty_results[[paste("Year", actual_year, "PovertyLine", line)]] <- result_fgt
+  }
+}
+
+poverty_measure <- rbindlist(poverty_results, idcol = "id")
+poverty_measure <- poverty_measure[, .(year, povline, headcount, poverty_gap, poverty_severity)]
+print(poverty_measure)
+```
+
+```{r}
+#Lorenz curve
+
+lorenzcurve <-  function(data, year) {
+  
+  data <- data[order(data$income), ]
+  
+  data$cum_income <- cumsum(data$weight * data$income)
+  total_income <- sum(data$income * data$weight)
+  data$cum_welfare <- data$cum_income/ total_income
+  
+  data$cum_population <- cumsum(data$weight)
+  total_population <-  sum(data$weight)
+  data$cum_population <- data$cum_population / total_population
+  
+  data$year <- year
+  data$bin <- ceiling(data$cum_population *100)
+  
+  data <-  data[, .(welfare = income, cum_welfare, cum_population, year, bin)]
+  
+  return(data[!duplicated(data$bin),])
+}
+
+lorenz_curves <- lapply(names(l_svy), function(year) {
+  year_data <- l_svy[[year]]
+  actual_year <- as.integer(sub("Y", "", year))
+  lorenzcurve(year_data, actual_year)
+})
+
+lorenzcurve_result <- rbindlist(lorenz_curves, idcol = "id")
+print(lorenzcurve_result)
+```
+
+```{r}
+#Gini coefficient
+
+gini <- function(income, weights) {
+  sorted_indices <-  order(income)
+  income <-  income[sorted_indices]
+  weights <- weights[sorted_indices]
+  
+  cum_weights <- cumsum(weights) / sum(weights)
+  cum_income <- cumsum(weights * income) / sum(weights *income)
+  
+  B <- sum(cum_weights[-length(cum_weights)] * diff(cum_income))
+  
+  gini <- 1-2*B
+  return(gini)
+  
+} 
+  
+  gini_coefs <- sapply(names(l_svy), function(name) {
+    year_data <- l_svy[[name]]
+    with(year_data, gini(income, weight))
+  }, USE.NAMES = TRUE)
+
+print(gini_coefs)
+```
+
+```{r}
+#Graph
+#Find outliers
+
+library(ggplot2)
+
+shaded_area <-  stats_year %>% 
+  select(date, low_lifeex, high_lifeex) %>% 
+  rename(year = date, ymin = low_lifeex, ymax = high_lifeex)
+
+outlier_graph <- ggplot()+
+  geom_ribbon(data= shaded_area, aes(x= year, ymin=ymin, ymax= ymax), fill = "grey80", alpha = 0.5) +
+  geom_point(data = wdi, aes(x=date, y=lifeex, color=region), alpha=0.5) +
+  geom_line(data=stats_year, aes(x=date, y=mean_lifeex), color = "blue", size=1) +
+  theme_minimal()
+
+print(outlier_graph)
+```
+
+```{r}
+#Graph
+#Poverty measures
+
+library(ggplot2)
+
+poverty_measure$povline <- factor(poverty_measure$povline, levels = c(2.15, 3.65, 6.85))
+line_colors <- c("2.15" = "red", "3.65" = "green", "6.85" = "blue")
+
+graph_poverty <- ggplot(data = poverty_measure, aes (x = year, y= headcount, group = povline, color = povline))+
+  geom_line()+
+  scale_color_manual(values = line_colors)+
+    theme_minimal()
+
+print(graph_poverty)
+```
+
+```{r}
+#Graph
+#Lorenz curve
+
+lorenzcurve_result$year <- as.factor(lorenzcurve_result$year)
+
+graph_lorenz <- ggplot(data = lorenzcurve_result, aes(x=cum_population, y = cum_welfare, group = year, color = year))+
+  geom_line()+ theme_minimal()
+
+print(graph_lorenz)
+```
+
+```{r}
+#graph
+#Gini coefficient
+
+library(ggplot2)
+
+gini_graph_data <-data.frame(
+  year=as.integer(sub("Y", "", names(gini_coefs))),
+  gini = unname(gini_coefs)*-1
+)
+
+graph_gini <- ggplot(gini_graph_data, aes(x=year, y=gini))+
+  geom_line(group = 1, color= "black")+
+  geom_point(color = "black") +
+  theme_minimal()
+
+print(graph_gini)
 ```
