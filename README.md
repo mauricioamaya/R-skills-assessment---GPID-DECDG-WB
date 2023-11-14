@@ -3,7 +3,7 @@ R Skills Assessment
 
 Overview
 
-This repository contains the solutions for the R Skills Assessment conducted by the Global Poverty & Inequality Data Team (GPID) in the Development Economics Data Group (DECDG) at the World Bank.
+This repository contains the solutions for the R Skills Assessment conducted on November of 2023 by the Global Poverty & Inequality Data Team (GPID) in the Development Economics Data Group (DECDG) at the World Bank.
 
 Contents
 
