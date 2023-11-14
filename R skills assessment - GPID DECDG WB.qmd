@@ -7,5 +7,10 @@ title: "R skills assessment - GPID DECDG WB"
 Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
 
 ```{r}
-1 + 1
+tag      <- "202311081903"
+base_url <- "https://github.com/randrescastaneda/pub_data/raw/"
+data_url <- paste0(base_url, tag, "/data/Rtest1/")
+
+
+wdi <- readr::read_rds(paste0(data_url, "wdi_in1.Rds"))
 ```
