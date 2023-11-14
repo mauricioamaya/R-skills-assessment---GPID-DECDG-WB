@@ -54,3 +54,5 @@ po/*~
 # RStudio Connect folder
 rsconnect/
 >>>>>>> 1a6ce56469ff375bba520537f36c100bd66aece0
+
+/.quarto/
