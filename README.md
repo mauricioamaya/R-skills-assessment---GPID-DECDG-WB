@@ -6,13 +6,27 @@ Overview
 This repository contains the solutions for the R Skills Assessment conducted by the Global Poverty & Inequality Data Team (GPID) in the Development Economics Data Group (DECDG) at the World Bank.
 
 Contents
+ChatGPT
 
-  Analysis of GDP per capita, life expectancy, poverty measures, and income distribution.
-  Functions to perform statistical analysis, such as calculating summary statistics, identifying outliers, and computing poverty and inequality indices.
-  Visualizations using ggplot2, including poverty trends, Lorenz curves, and Gini coefficients.
+Certainly! Here's the revised section in bullet points:
 
-Tools Used
+    Analysis:
+        GDP per capita
+        Life expectancy
+        Poverty measures
+        Income distribution
 
-  R and RStudio
-  Quarto (.Rmd) for presenting findings.
-  Git and GitHub for code sharing and version control.
+    Functions for Statistical Analysis:
+        Calculating summary statistics
+        Identifying outliers
+        Computing poverty and inequality indices
+
+    Visualizations using ggplot2:
+        Poverty trends
+        Lorenz curves
+        Gini coefficients
+
+    Tools Used:
+        R and RStudio
+        Quarto (.Rmd) for presenting findings
+        Git and GitHub for code sharing and version control
